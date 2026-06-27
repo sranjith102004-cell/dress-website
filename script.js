@@ -71,6 +71,9 @@ const catalogGrid = document.querySelector("#catalogGrid");
 const cartItems = document.querySelector("#cartItems");
 const cartTotal = document.querySelector("#cartTotal");
 const whatsappButton = document.querySelector("#whatsappButton");
+const customerName = document.querySelector("#customerName");
+const customerPhone = document.querySelector("#customerPhone");
+const customerAddress = document.querySelector("#customerAddress");
 const searchInput = document.querySelector("#searchInput");
 const filterButtons = document.querySelectorAll(".filter-button");
 
@@ -253,24 +256,36 @@ function renderCart() {
             <br />
             <span>${formatPrice(item.price)} - Size ${item.selectedSize}</span>
           </div>
+          <div class="quantity-control" aria-label="Quantity">
+            <button type="button" data-quantity="${index}" data-change="-1">-</button>
+            <strong>${item.quantity}</strong>
+            <button type="button" data-quantity="${index}" data-change="1">+</button>
+          </div>
           <button type="button" data-remove="${index}">Remove</button>
         </div>
       `,
     )
     .join("");
 
-  const total = cart.reduce((sum, item) => sum + item.price, 0);
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   cartTotal.textContent = formatPrice(total);
 
   const lines = cart.map(
-    (item) => `- ${item.code} ${item.name}, Size ${item.selectedSize} (${formatPrice(item.price)})`,
+    (item) =>
+      `- ${item.code} ${item.name}, Size ${item.selectedSize}, Qty ${item.quantity} (${formatPrice(
+        item.price * item.quantity,
+      )})`,
   );
+  const name = customerName.value.trim() || "Not provided";
+  const phone = customerPhone.value.trim() || "Not provided";
+  const address = customerAddress.value.trim() || "Not provided";
   const message = [
     "Hi, I want to order these dresses:",
     ...lines,
     `Total: ${formatPrice(total)}`,
-    "My name:",
-    "Delivery address:",
+    `Name: ${name}`,
+    `Phone: ${phone}`,
+    `Delivery address: ${address}`,
   ].join("\n");
 
   whatsappButton.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -311,12 +326,33 @@ catalogGrid.addEventListener("click", (event) => {
     return;
   }
 
-  cart.push({ ...dress, selectedSize });
+  const existingItem = cart.find((item) => item.code === dress.code && item.selectedSize === selectedSize);
+
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    cart.push({ ...dress, selectedSize, quantity: 1 });
+  }
+
   renderCart();
   document.querySelector("#order").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 cartItems.addEventListener("click", (event) => {
+  const quantityButton = event.target.closest("[data-quantity]");
+  if (quantityButton) {
+    const index = Number(quantityButton.dataset.quantity);
+    const change = Number(quantityButton.dataset.change);
+    cart[index].quantity += change;
+
+    if (cart[index].quantity < 1) {
+      cart.splice(index, 1);
+    }
+
+    renderCart();
+    return;
+  }
+
   const button = event.target.closest("[data-remove]");
   if (!button) return;
 
@@ -334,5 +370,8 @@ filterButtons.forEach((button) => {
 });
 
 searchInput.addEventListener("input", renderCatalog);
+customerName.addEventListener("input", renderCart);
+customerPhone.addEventListener("input", renderCart);
+customerAddress.addEventListener("input", renderCart);
 
 loadDressesFromSheet();

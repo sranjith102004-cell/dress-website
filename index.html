@@ -69,9 +69,23 @@
           <div id="cartItems" class="cart-items">
             <p class="empty-cart">No dresses added yet.</p>
           </div>
+          <div class="customer-form" aria-label="Customer details">
+            <label>
+              <span>Name</span>
+              <input id="customerName" type="text" placeholder="Customer name" />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input id="customerPhone" type="tel" placeholder="Phone number" />
+            </label>
+            <label class="full-field">
+              <span>Address</span>
+              <textarea id="customerAddress" rows="3" placeholder="Delivery address"></textarea>
+            </label>
+          </div>
           <div class="cart-total">
             <span>Total</span>
-            <strong id="cartTotal">RM 0</strong>
+            <strong id="cartTotal">Rs 0</strong>
           </div>
           <a class="whatsapp-button disabled" id="whatsappButton" href="#" aria-disabled="true">
             Order on WhatsApp
