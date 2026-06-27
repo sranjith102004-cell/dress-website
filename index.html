@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maya Dress Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Maya Dress Studio home">
+        <span class="brand-mark">M</span>
+        <span>Maya Dress Studio</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#catalog">Catalog</a>
+        <a href="#order">Order</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="home">
+        <img src="assets/boutique-dresses.png" alt="Boutique dress display" />
+        <div class="hero-copy">
+          <p class="eyebrow">Fresh arrivals every week</p>
+          <h1>Maya Dress Studio</h1>
+          <p>
+            Browse dresses by code, pick your size, and send one clean WhatsApp
+            order message.
+          </p>
+          <a class="primary-action" href="#catalog">View Dresses</a>
+        </div>
+      </section>
+
+      <section class="shop-section" id="catalog">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Shop catalog</p>
+            <h2>Available Dresses</h2>
+          </div>
+          <label class="search-box">
+            <span>Search</span>
+            <input id="searchInput" type="search" placeholder="Code, color, style..." />
+          </label>
+        </div>
+
+        <div class="filters" aria-label="Dress filters">
+          <button class="filter-button active" type="button" data-filter="all">All</button>
+          <button class="filter-button" type="button" data-filter="kurti">Kurti</button>
+          <button class="filter-button" type="button" data-filter="gown">Gown</button>
+          <button class="filter-button" type="button" data-filter="casual">Casual</button>
+          <button class="filter-button" type="button" data-filter="party">Party</button>
+        </div>
+
+        <div class="catalog-grid" id="catalogGrid" aria-live="polite"></div>
+      </section>
+
+      <section class="order-band" id="order">
+        <div>
+          <p class="eyebrow">Quick order</p>
+          <h2>Your Selection</h2>
+          <p class="muted">
+            Add dresses, then send the ready-made WhatsApp message. Product
+            prices and stock can be updated from Google Sheets.
+          </p>
+        </div>
+        <div class="order-panel">
+          <div id="cartItems" class="cart-items">
+            <p class="empty-cart">No dresses added yet.</p>
+          </div>
+          <div class="cart-total">
+            <span>Total</span>
+            <strong id="cartTotal">RM 0</strong>
+          </div>
+          <a class="whatsapp-button disabled" id="whatsappButton" href="#" aria-disabled="true">
+            Order on WhatsApp
+          </a>
+        </div>
+      </section>
+
+      <section class="contact-section" id="contact">
+        <div>
+          <p class="eyebrow">Simple selling flow</p>
+          <h2>Use dress codes in WhatsApp status</h2>
+        </div>
+        <div class="steps">
+          <article>
+            <strong>1</strong>
+            <h3>Post photo + code</h3>
+            <p>Example: D001, Rs 899, sizes S to XL.</p>
+          </article>
+          <article>
+            <strong>2</strong>
+            <h3>Customer opens catalog</h3>
+            <p>They check photos, sizes, colors, and price in one place.</p>
+          </article>
+          <article>
+            <strong>3</strong>
+            <h3>Order comes clean</h3>
+            <p>WhatsApp message includes dress code, size, and total.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Maya Dress Studio</span>
+      <a href="#home">Back to top</a>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
