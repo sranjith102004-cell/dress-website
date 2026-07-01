@@ -13,6 +13,7 @@ const sampleDresses = [
     bg: "linear-gradient(135deg, #e7f2ef, #b8d8d4)",
     dress: "#0f766e",
     stockCount: 5,
+    sizeStock: { S: 1, M: 2, L: 1, XL: 1 },
   },
   {
     code: "D002",
@@ -24,6 +25,7 @@ const sampleDresses = [
     bg: "linear-gradient(135deg, #fff1ed, #f1b7aa)",
     dress: "#d85a43",
     stockCount: 2,
+    sizeStock: { M: 1, L: 1, XL: 0 },
   },
   {
     code: "D003",
@@ -35,6 +37,7 @@ const sampleDresses = [
     bg: "linear-gradient(135deg, #eef3f8, #aeb9c7)",
     dress: "#293241",
     stockCount: 4,
+    sizeStock: { S: 2, M: 1, L: 1 },
   },
   {
     code: "D004",
@@ -46,6 +49,7 @@ const sampleDresses = [
     bg: "linear-gradient(135deg, #f3f6eb, #bccb9b)",
     dress: "#8aa66a",
     stockCount: 1,
+    sizeStock: { S: 0, M: 1, L: 0, XL: 0 },
   },
   {
     code: "D005",
@@ -57,6 +61,7 @@ const sampleDresses = [
     bg: "linear-gradient(135deg, #fbf7ec, #dfd3b8)",
     dress: "#c8aa6e",
     stockCount: 3,
+    sizeStock: { M: 1, L: 1, XL: 1, XXL: 0 },
   },
   {
     code: "D006",
@@ -68,6 +73,7 @@ const sampleDresses = [
     bg: "linear-gradient(135deg, #f4edf3, #c7a9c1)",
     dress: "#7b416d",
     stockCount: 6,
+    sizeStock: { S: 2, M: 2, L: 2 },
   },
 ];
 
@@ -113,11 +119,22 @@ function getProductQuantity(code) {
   return productQuantities[code] || 1;
 }
 
+function getSelectedStockLimit(dress) {
+  const selectedSize = selectedSizes[dress.code] || "";
+  if (selectedSize && dress.sizeStock && Object.hasOwn(dress.sizeStock, selectedSize)) {
+    return dress.sizeStock[selectedSize];
+  }
+
+  return dress.stockCount ?? null;
+}
+
 function updateProductQuantity(code, change) {
   const dress = dresses.find((item) => item.code === code);
-  if (dress?.stockCount === 0) return;
+  if (!dress) return;
 
-  const maxQuantity = dress?.stockCount ?? Infinity;
+  const maxQuantity = getSelectedStockLimit(dress) ?? Infinity;
+  if (maxQuantity === 0) return;
+
   productQuantities[code] = Math.min(maxQuantity, Math.max(1, getProductQuantity(code) + change));
   renderCatalog();
 }
@@ -128,6 +145,37 @@ function getStockCount(product) {
   const stockCount = Number(String(rawStockCount).replace(/[^\d]/g, ""));
   if (String(rawStockCount).trim() === "") return null;
   return Number.isFinite(stockCount) && stockCount >= 0 ? stockCount : null;
+}
+
+function getSizeStock(product) {
+  const rawSizeStock = product.sizestock || product["size stock"] || product.sizestocks || product["size stocks"] || "";
+  if (!rawSizeStock.trim()) return {};
+
+  return rawSizeStock.split(",").reduce((stocks, entry) => {
+    const [rawSize, rawCount] = entry.split(":");
+    const size = rawSize?.trim();
+    const count = Number(String(rawCount || "").replace(/[^\d]/g, ""));
+
+    if (size && Number.isFinite(count)) stocks[size] = count;
+    return stocks;
+  }, {});
+}
+
+function getTotalSizeStock(sizeStock) {
+  const counts = Object.values(sizeStock || {});
+  return counts.length ? counts.reduce((sum, count) => sum + count, 0) : null;
+}
+
+function getStockLabel(dress) {
+  const selectedSize = selectedSizes[dress.code];
+
+  if (selectedSize && dress.sizeStock && Object.hasOwn(dress.sizeStock, selectedSize)) {
+    return `${dress.sizeStock[selectedSize]} in stock for ${selectedSize}`;
+  }
+
+  if (dress.stockCount !== null && dress.stockCount !== undefined) return `${dress.stockCount} in stock`;
+
+  return "";
 }
 
 function formatCategory(category) {
@@ -213,7 +261,8 @@ function sheetRowsToDresses(csvText) {
       const code = product.code || `D${String(index + 1).padStart(3, "0")}`;
       const price = Number(String(product.price || "0").replace(/[^\d.]/g, ""));
       const stock = (product.stock || product.stocks || "available").trim().toLowerCase();
-      const stockCount = getStockCount(product);
+      const sizeStock = getSizeStock(product);
+      const stockCount = getStockCount(product) ?? getTotalSizeStock(sizeStock);
 
       return {
         code,
@@ -227,6 +276,7 @@ function sheetRowsToDresses(csvText) {
           .filter(Boolean),
         stock,
         stockCount,
+        sizeStock,
         photo: product.photo || product.image || "",
         bg: product.bg || sampleDresses[index % sampleDresses.length].bg,
         dress: product.dress || sampleDresses[index % sampleDresses.length].dress,
@@ -300,7 +350,7 @@ function renderCatalog() {
                 </div>
               </div>
             </div>
-            ${dress.stockCount !== null && dress.stockCount !== undefined ? `<p class="stock-count">${dress.stockCount} in stock</p>` : ""}
+            ${getStockLabel(dress) ? `<p class="stock-count">${getStockLabel(dress)}</p>` : ""}
             ${
               getProductSizes(dress).length
                 ? `
@@ -315,7 +365,13 @@ function renderCatalog() {
                             data-size="${size}"
                             ${selectedSizes[dress.code] === size ? 'aria-pressed="true"' : 'aria-pressed="false"'}
                             ${selectedSizes[dress.code] === size ? "data-selected=\"true\"" : ""}
-                            ${dress.stock === "sold out" || dress.stockCount === 0 ? "disabled" : ""}
+                            ${
+                              dress.stock === "sold out" ||
+                              (dress.sizeStock && Object.hasOwn(dress.sizeStock, size) && dress.sizeStock[size] === 0) ||
+                              dress.stockCount === 0
+                                ? "disabled"
+                                : ""
+                            }
                           >
                             ${size}
                           </button>
@@ -465,13 +521,14 @@ catalogGrid.addEventListener("click", (event) => {
 
   const existingItem = cart.find((item) => item.code === dress.code && item.selectedSize === selectedSize);
   const quantity = getProductQuantity(dress.code);
+  const selectedStockLimit = getSelectedStockLimit(dress);
 
   if (existingItem) {
-    existingItem.quantity = dress.stockCount !== null && dress.stockCount !== undefined
-      ? Math.min(dress.stockCount, existingItem.quantity + quantity)
+    existingItem.quantity = selectedStockLimit !== null && selectedStockLimit !== undefined
+      ? Math.min(selectedStockLimit, existingItem.quantity + quantity)
       : existingItem.quantity + quantity;
   } else {
-    cart.push({ ...dress, selectedSize, quantity });
+    cart.push({ ...dress, selectedSize, quantity, stockLimit: selectedStockLimit });
   }
 
   productQuantities[dress.code] = 1;
@@ -485,7 +542,7 @@ cartItems.addEventListener("click", (event) => {
   if (quantityButton) {
     const index = Number(quantityButton.dataset.quantity);
     const change = Number(quantityButton.dataset.change);
-    const maxQuantity = cart[index].stockCount ?? Infinity;
+    const maxQuantity = cart[index].stockLimit ?? cart[index].stockCount ?? Infinity;
     cart[index].quantity = Math.min(maxQuantity, cart[index].quantity + change);
 
     if (cart[index].quantity < 1) {
