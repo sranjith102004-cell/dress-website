@@ -1,4 +1,5 @@
-Code,Name,Category,Color,Price,Sizes,Stock,Photo
-D001,Floral Kurti,kurti,Pink,899,"S,M,L",available,
-D002,Party Gown,party,Blue,1299,"M,L",sold out,
-D003,Cotton Casual Dress,casual,Green,799,"S,M,L,XL",available,
+Code,Name,Category,Color,Price,Sizes,Stock,StockCount,Photo
+D001,Floral Kurti,kurti,Pink,899,"S,M,L",available,5,
+D002,Party Gown,party,Blue,1299,"M,L",sold out,0,
+D003,Cotton Casual Dress,casual,Green,799,"S,M,L,XL",available,8,
+D004,Linen Pants,pant,Black,699,,available,3,

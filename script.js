@@ -12,6 +12,7 @@ const sampleDresses = [
     sizes: ["S", "M", "L", "XL"],
     bg: "linear-gradient(135deg, #e7f2ef, #b8d8d4)",
     dress: "#0f766e",
+    stockCount: 5,
   },
   {
     code: "D002",
@@ -22,6 +23,7 @@ const sampleDresses = [
     sizes: ["M", "L", "XL"],
     bg: "linear-gradient(135deg, #fff1ed, #f1b7aa)",
     dress: "#d85a43",
+    stockCount: 2,
   },
   {
     code: "D003",
@@ -32,6 +34,7 @@ const sampleDresses = [
     sizes: ["S", "M", "L"],
     bg: "linear-gradient(135deg, #eef3f8, #aeb9c7)",
     dress: "#293241",
+    stockCount: 4,
   },
   {
     code: "D004",
@@ -42,6 +45,7 @@ const sampleDresses = [
     sizes: ["S", "M", "L", "XL"],
     bg: "linear-gradient(135deg, #f3f6eb, #bccb9b)",
     dress: "#8aa66a",
+    stockCount: 1,
   },
   {
     code: "D005",
@@ -52,6 +56,7 @@ const sampleDresses = [
     sizes: ["M", "L", "XL", "XXL"],
     bg: "linear-gradient(135deg, #fbf7ec, #dfd3b8)",
     dress: "#c8aa6e",
+    stockCount: 3,
   },
   {
     code: "D006",
@@ -62,29 +67,106 @@ const sampleDresses = [
     sizes: ["S", "M", "L"],
     bg: "linear-gradient(135deg, #f4edf3, #c7a9c1)",
     dress: "#7b416d",
+    stockCount: 6,
   },
 ];
 
 let dresses = [...sampleDresses];
 const cart = [];
+const productQuantities = {};
+const selectedSizes = {};
+const shopView = document.querySelector("#shopView");
+const cartView = document.querySelector("#cartView");
 const catalogGrid = document.querySelector("#catalogGrid");
+const filters = document.querySelector("#filters");
+const loadMorePanel = document.querySelector("#loadMorePanel");
+const viewedCountText = document.querySelector("#viewedCountText");
+const loadProgressBar = document.querySelector("#loadProgressBar");
+const loadMoreButton = document.querySelector("#loadMoreButton");
 const cartItems = document.querySelector("#cartItems");
 const cartTotal = document.querySelector("#cartTotal");
 const whatsappButton = document.querySelector("#whatsappButton");
+const cartNavButton = document.querySelector("#cartNavButton");
+const cartCount = document.querySelector("#cartCount");
+const backToShopButton = document.querySelector("#backToShopButton");
 const customerName = document.querySelector("#customerName");
 const customerPhone = document.querySelector("#customerPhone");
 const customerAddress = document.querySelector("#customerAddress");
 const searchInput = document.querySelector("#searchInput");
-const filterButtons = document.querySelectorAll(".filter-button");
+const imageModal = document.querySelector("#imageModal");
+const modalImage = document.querySelector("#modalImage");
+const modalCloseButton = document.querySelector("#modalCloseButton");
 
 let activeFilter = "all";
+let visibleProductLimit = 12;
+const productsPerLoad = 12;
 
 function formatPrice(amount) {
   return `${currencyPrefix} ${amount}`;
 }
 
 function getProductSizes(dress) {
-  return dress.sizes.length ? dress.sizes : ["Free Size"];
+  return dress.sizes;
+}
+
+function getProductQuantity(code) {
+  return productQuantities[code] || 1;
+}
+
+function updateProductQuantity(code, change) {
+  const dress = dresses.find((item) => item.code === code);
+  if (dress?.stockCount === 0) return;
+
+  const maxQuantity = dress?.stockCount ?? Infinity;
+  productQuantities[code] = Math.min(maxQuantity, Math.max(1, getProductQuantity(code) + change));
+  renderCatalog();
+}
+
+function getStockCount(product) {
+  const rawStockCount =
+    product.stockcount || product["stock count"] || product.quantity || product.qty || product.available || "";
+  const stockCount = Number(String(rawStockCount).replace(/[^\d]/g, ""));
+  if (String(rawStockCount).trim() === "") return null;
+  return Number.isFinite(stockCount) && stockCount >= 0 ? stockCount : null;
+}
+
+function formatCategory(category) {
+  return category
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function showShopView(targetId = "catalog") {
+  shopView.classList.remove("hidden-view");
+  cartView.classList.add("hidden-view");
+  document.querySelector(`#${targetId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function showCartView() {
+  shopView.classList.add("hidden-view");
+  cartView.classList.remove("hidden-view");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function updateCartCount() {
+  cartCount.textContent = cart.length;
+}
+
+function renderFilters() {
+  const categories = [...new Set(dresses.map((dress) => dress.category).filter(Boolean))].sort();
+  if (activeFilter !== "all" && !categories.includes(activeFilter)) activeFilter = "all";
+
+  filters.innerHTML = [
+    `<button class="filter-button ${activeFilter === "all" ? "active" : ""}" type="button" data-filter="all">All</button>`,
+    ...categories.map(
+      (category) =>
+        `<button class="filter-button ${activeFilter === category ? "active" : ""}" type="button" data-filter="${category}">${formatCategory(
+          category,
+        )}</button>`,
+    ),
+  ].join("");
 }
 
 function parseCsv(csvText) {
@@ -130,7 +212,8 @@ function sheetRowsToDresses(csvText) {
       const product = Object.fromEntries(headers.map((header, cellIndex) => [header, row[cellIndex] || ""]));
       const code = product.code || `D${String(index + 1).padStart(3, "0")}`;
       const price = Number(String(product.price || "0").replace(/[^\d.]/g, ""));
-      const stock = (product.stock || "available").toLowerCase();
+      const stock = (product.stock || product.stocks || "available").trim().toLowerCase();
+      const stockCount = getStockCount(product);
 
       return {
         code,
@@ -143,6 +226,7 @@ function sheetRowsToDresses(csvText) {
           .map((size) => size.trim())
           .filter(Boolean),
         stock,
+        stockCount,
         photo: product.photo || product.image || "",
         bg: product.bg || sampleDresses[index % sampleDresses.length].bg,
         dress: product.dress || sampleDresses[index % sampleDresses.length].dress,
@@ -160,7 +244,8 @@ async function loadDressesFromSheet() {
 
   try {
     catalogGrid.innerHTML = '<p class="muted">Loading latest dresses...</p>';
-    const response = await fetch(googleSheetCsvUrl);
+    const sheetUrl = `${googleSheetCsvUrl}${googleSheetCsvUrl.includes("?") ? "&" : "?"}t=${Date.now()}`;
+    const response = await fetch(sheetUrl, { cache: "no-store" });
     if (!response.ok) throw new Error("Sheet could not be loaded");
 
     const sheetDresses = sheetRowsToDresses(await response.text());
@@ -175,56 +260,77 @@ async function loadDressesFromSheet() {
 }
 
 function renderCatalog() {
+  renderFilters();
   const query = searchInput.value.trim().toLowerCase();
   const visibleDresses = dresses.filter((dress) => {
     const matchesFilter = activeFilter === "all" || dress.category === activeFilter;
     const searchable = `${dress.code} ${dress.name} ${dress.color} ${dress.category}`.toLowerCase();
     return matchesFilter && searchable.includes(query);
   });
+  const visibleProductCount = Math.min(visibleProductLimit, visibleDresses.length);
+  const listedDresses = visibleDresses.slice(0, visibleProductCount);
 
-  catalogGrid.innerHTML = visibleDresses
+  catalogGrid.innerHTML = listedDresses
     .map(
       (dress) => `
         <article class="product-card">
-          <div class="product-image${dress.photo ? " has-photo" : ""}" style="--dress-bg: ${dress.bg}; --dress-color: ${dress.dress}">
+          <button class="product-image${dress.photo ? " has-photo" : ""}" type="button" data-preview-code="${
+            dress.code
+          }" style="--dress-bg: ${dress.bg}; --dress-color: ${dress.dress}">
             ${
               dress.photo
                 ? `<img class="dress-photo" src="${dress.photo}" alt="${dress.name}" loading="lazy" />`
                 : ""
             }
             <span class="code-pill">${dress.code}</span>
-            ${dress.stock === "sold out" ? '<span class="stock-pill">Sold out</span>' : ""}
-          </div>
+            ${dress.stock === "sold out" || dress.stockCount === 0 ? '<span class="stock-pill">Sold out</span>' : ""}
+          </button>
           <div class="product-info">
             <div class="product-meta">
               <div>
                 <h3>${dress.name}</h3>
                 <p>${dress.color} - ${dress.category}</p>
               </div>
-              <span class="price">${formatPrice(dress.price)}</span>
+              <div class="price-stack">
+                <span class="price">${formatPrice(dress.price)}</span>
+                <div class="product-quantity" aria-label="Quantity">
+                  <button type="button" data-product-quantity="${dress.code}" data-change="-1">-</button>
+                  <strong>${getProductQuantity(dress.code)}</strong>
+                  <button type="button" data-product-quantity="${dress.code}" data-change="1">+</button>
+                </div>
+              </div>
             </div>
-            <div class="sizes" aria-label="Available sizes">
-              ${getProductSizes(dress)
-                .map(
-                  (size) => `
-                    <button
-                      class="size-option"
-                      type="button"
-                      data-size-code="${dress.code}"
-                      data-size="${size}"
-                      ${dress.stock === "sold out" ? "disabled" : ""}
-                    >
-                      ${size}
-                    </button>
-                  `,
-                )
-                .join("")}
-            </div>
-            <p class="size-warning" data-size-warning="${dress.code}">Please select a size first.</p>
+            ${dress.stockCount !== null && dress.stockCount !== undefined ? `<p class="stock-count">${dress.stockCount} in stock</p>` : ""}
+            ${
+              getProductSizes(dress).length
+                ? `
+                  <div class="sizes" aria-label="Available sizes">
+                    ${getProductSizes(dress)
+                      .map(
+                        (size) => `
+                          <button
+                            class="size-option${selectedSizes[dress.code] === size ? " selected" : ""}"
+                            type="button"
+                            data-size-code="${dress.code}"
+                            data-size="${size}"
+                            ${selectedSizes[dress.code] === size ? 'aria-pressed="true"' : 'aria-pressed="false"'}
+                            ${selectedSizes[dress.code] === size ? "data-selected=\"true\"" : ""}
+                            ${dress.stock === "sold out" || dress.stockCount === 0 ? "disabled" : ""}
+                          >
+                            ${size}
+                          </button>
+                        `,
+                      )
+                      .join("")}
+                  </div>
+                  <p class="size-warning" data-size-warning="${dress.code}">Please select a size first.</p>
+                `
+                : ""
+            }
             <button class="add-button" type="button" data-code="${dress.code}" ${
-              dress.stock === "sold out" ? "disabled" : ""
+              dress.stock === "sold out" || dress.stockCount === 0 ? "disabled" : ""
             }>
-              ${dress.stock === "sold out" ? "Sold Out" : "Add to Order"}
+              ${dress.stock === "sold out" || dress.stockCount === 0 ? "Sold Out" : "Add to Order"}
             </button>
           </div>
         </article>
@@ -235,6 +341,11 @@ function renderCatalog() {
   if (!visibleDresses.length) {
     catalogGrid.innerHTML = '<p class="muted">No dresses match your search.</p>';
   }
+
+  viewedCountText.textContent = `You've viewed ${visibleProductCount} of ${visibleDresses.length} products`;
+  loadProgressBar.style.width = visibleDresses.length ? `${(visibleProductCount / visibleDresses.length) * 100}%` : "0%";
+  loadMorePanel.classList.toggle("hidden-view", visibleDresses.length <= productsPerLoad);
+  loadMoreButton.classList.toggle("hidden-view", visibleProductCount >= visibleDresses.length);
 }
 
 function renderCart() {
@@ -244,6 +355,7 @@ function renderCart() {
     whatsappButton.classList.add("disabled");
     whatsappButton.setAttribute("aria-disabled", "true");
     whatsappButton.href = "#";
+    updateCartCount();
     return;
   }
 
@@ -254,7 +366,7 @@ function renderCart() {
           <div>
             <strong>${item.code}</strong> ${item.name}
             <br />
-            <span>${formatPrice(item.price)} - Size ${item.selectedSize}</span>
+            <span>${formatPrice(item.price)}${item.selectedSize ? ` - Size ${item.selectedSize}` : ""}</span>
           </div>
           <div class="quantity-control" aria-label="Quantity">
             <button type="button" data-quantity="${index}" data-change="-1">-</button>
@@ -272,7 +384,9 @@ function renderCart() {
 
   const lines = cart.map(
     (item) =>
-      `- ${item.code} ${item.name}, Size ${item.selectedSize}, Qty ${item.quantity} (${formatPrice(
+      `- ${item.code} ${item.name}${item.selectedSize ? `, Size ${item.selectedSize}` : ""}, Qty ${
+        item.quantity
+      } (${formatPrice(
         item.price * item.quantity,
       )})`,
   );
@@ -291,9 +405,28 @@ function renderCart() {
   whatsappButton.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
   whatsappButton.classList.remove("disabled");
   whatsappButton.setAttribute("aria-disabled", "false");
+  updateCartCount();
 }
 
 catalogGrid.addEventListener("click", (event) => {
+  const previewButton = event.target.closest("[data-preview-code]");
+  if (previewButton) {
+    const dress = dresses.find((item) => item.code === previewButton.dataset.previewCode);
+    if (!dress) return;
+
+    modalImage.src = dress.photo || "assets/boutique-dresses.png";
+    modalImage.alt = dress.name;
+    imageModal.classList.add("open");
+    imageModal.setAttribute("aria-hidden", "false");
+    return;
+  }
+
+  const productQuantityButton = event.target.closest("[data-product-quantity]");
+  if (productQuantityButton) {
+    updateProductQuantity(productQuantityButton.dataset.productQuantity, Number(productQuantityButton.dataset.change));
+    return;
+  }
+
   const sizeButton = event.target.closest("[data-size]");
   if (sizeButton) {
     const card = sizeButton.closest(".product-card");
@@ -307,6 +440,9 @@ catalogGrid.addEventListener("click", (event) => {
     if (!wasSelected) {
       sizeButton.classList.add("selected");
       sizeButton.setAttribute("aria-pressed", "true");
+      selectedSizes[sizeButton.dataset.sizeCode] = sizeButton.dataset.size;
+    } else {
+      delete selectedSizes[sizeButton.dataset.sizeCode];
     }
 
     card.querySelector(".size-warning")?.classList.remove("visible");
@@ -317,25 +453,31 @@ catalogGrid.addEventListener("click", (event) => {
   if (!button) return;
 
   const dress = dresses.find((item) => item.code === button.dataset.code);
-  if (!dress || dress.stock === "sold out") return;
+  if (!dress || dress.stock === "sold out" || dress.stockCount === 0) return;
 
   const card = button.closest(".product-card");
-  const selectedSize = card.querySelector("[data-size].selected")?.dataset.size;
-  if (!selectedSize) {
+  const productSizes = getProductSizes(dress);
+  const selectedSize = card.querySelector("[data-size].selected")?.dataset.size || "";
+  if (productSizes.length && !selectedSize) {
     card.querySelector(".size-warning")?.classList.add("visible");
     return;
   }
 
   const existingItem = cart.find((item) => item.code === dress.code && item.selectedSize === selectedSize);
+  const quantity = getProductQuantity(dress.code);
 
   if (existingItem) {
-    existingItem.quantity += 1;
+    existingItem.quantity = dress.stockCount !== null && dress.stockCount !== undefined
+      ? Math.min(dress.stockCount, existingItem.quantity + quantity)
+      : existingItem.quantity + quantity;
   } else {
-    cart.push({ ...dress, selectedSize, quantity: 1 });
+    cart.push({ ...dress, selectedSize, quantity });
   }
 
+  productQuantities[dress.code] = 1;
+  delete selectedSizes[dress.code];
+  renderCatalog();
   renderCart();
-  document.querySelector("#order").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 cartItems.addEventListener("click", (event) => {
@@ -343,7 +485,8 @@ cartItems.addEventListener("click", (event) => {
   if (quantityButton) {
     const index = Number(quantityButton.dataset.quantity);
     const change = Number(quantityButton.dataset.change);
-    cart[index].quantity += change;
+    const maxQuantity = cart[index].stockCount ?? Infinity;
+    cart[index].quantity = Math.min(maxQuantity, cart[index].quantity + change);
 
     if (cart[index].quantity < 1) {
       cart.splice(index, 1);
@@ -360,18 +503,44 @@ cartItems.addEventListener("click", (event) => {
   renderCart();
 });
 
-filterButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    filterButtons.forEach((item) => item.classList.remove("active"));
-    button.classList.add("active");
-    activeFilter = button.dataset.filter;
-    renderCatalog();
-  });
+filters.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-filter]");
+  if (!button) return;
+
+  activeFilter = button.dataset.filter;
+  visibleProductLimit = productsPerLoad;
+  renderCatalog();
 });
 
-searchInput.addEventListener("input", renderCatalog);
+searchInput.addEventListener("input", () => {
+  visibleProductLimit = productsPerLoad;
+  renderCatalog();
+});
+loadMoreButton.addEventListener("click", () => {
+  visibleProductLimit += productsPerLoad;
+  renderCatalog();
+});
 customerName.addEventListener("input", renderCart);
 customerPhone.addEventListener("input", renderCart);
 customerAddress.addEventListener("input", renderCart);
+cartNavButton.addEventListener("click", showCartView);
+backToShopButton.addEventListener("click", () => showShopView("catalog"));
+document.querySelectorAll('a[href="#catalog"], a[href="#contact"], a[href="#home"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    const targetId = link.getAttribute("href").slice(1);
+    if (cartView.classList.contains("hidden-view")) return;
+
+    event.preventDefault();
+    showShopView(targetId);
+  });
+});
+modalCloseButton.addEventListener("click", () => {
+  imageModal.classList.remove("open");
+  imageModal.setAttribute("aria-hidden", "true");
+  modalImage.removeAttribute("src");
+});
+imageModal.addEventListener("click", (event) => {
+  if (event.target === imageModal) modalCloseButton.click();
+});
 
 loadDressesFromSheet();

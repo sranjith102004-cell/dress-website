@@ -164,8 +164,10 @@ h3 {
 }
 
 .primary-action,
+.secondary-action,
 .whatsapp-button,
 .filter-button,
+.cart-nav-button,
 .add-button {
   border: 0;
   border-radius: 8px;
@@ -180,6 +182,36 @@ h3 {
   padding: 14px 20px;
   background: var(--white);
   color: var(--charcoal);
+}
+
+.secondary-action {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--charcoal);
+  color: var(--white);
+}
+
+.cart-nav-button {
+  position: relative;
+  padding: 10px 14px;
+  background: var(--charcoal);
+  color: var(--white);
+}
+
+.cart-nav-button span {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 0.78rem;
+}
+
+.hidden-view {
+  display: none !important;
 }
 
 .shop-section,
@@ -240,6 +272,48 @@ h3 {
   gap: 20px;
 }
 
+.load-more-panel {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  margin: 44px auto 0;
+  max-width: 540px;
+  color: var(--charcoal);
+  text-align: center;
+}
+
+.load-more-panel p {
+  margin-bottom: 0;
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+
+.load-progress {
+  width: min(100%, 420px);
+  height: 5px;
+  background: #a7a7a7;
+}
+
+.load-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #050505;
+  transition: width 0.2s ease;
+}
+
+.load-more-button {
+  width: min(100%, 420px);
+  border: 2px solid var(--charcoal);
+  border-radius: 0;
+  padding: 20px 22px;
+  background: var(--white);
+  color: var(--charcoal);
+  font: inherit;
+  font-size: clamp(1.3rem, 4vw, 2.4rem);
+  cursor: pointer;
+}
+
 .product-card {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -251,11 +325,16 @@ h3 {
 .product-image {
   position: relative;
   min-height: 260px;
+  width: 100%;
+  border: 0;
   display: grid;
   place-items: end start;
   padding: 16px;
   color: var(--white);
   background: var(--dress-bg);
+  cursor: zoom-in;
+  font: inherit;
+  text-align: left;
 }
 
 .product-image::before {
@@ -313,12 +392,29 @@ h3 {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
+}
+
+.product-meta p {
+  margin-bottom: 0;
+}
+
+.price-stack {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
 }
 
 .price {
   color: var(--teal-dark);
   font-size: 1.18rem;
+  font-weight: 800;
+}
+
+.stock-count {
+  margin-bottom: 10px;
+  color: var(--green);
+  font-size: 0.86rem;
   font-weight: 800;
 }
 
@@ -342,7 +438,8 @@ h3 {
   cursor: pointer;
 }
 
-.size-option.selected {
+.size-option.selected,
+.size-option[data-selected="true"] {
   border-color: var(--teal);
   background: var(--teal);
   color: var(--white);
@@ -363,6 +460,32 @@ h3 {
 
 .size-warning.visible {
   display: block;
+}
+
+.product-quantity {
+  display: grid;
+  grid-template-columns: 28px 30px 28px;
+  align-items: center;
+  overflow: hidden;
+  width: 86px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f6f7f4;
+  text-align: center;
+}
+
+.product-quantity button {
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--charcoal);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.product-quantity strong {
+  font-size: 0.82rem;
 }
 
 .add-button {
@@ -388,6 +511,7 @@ h3 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
   gap: 36px;
+  min-height: calc(100vh - 72px);
   padding: 72px 5vw;
   background: #eef3ed;
 }
@@ -541,6 +665,44 @@ footer {
   font-weight: 700;
 }
 
+.image-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.86);
+}
+
+.image-modal.open {
+  display: flex;
+}
+
+.image-modal img {
+  max-width: min(960px, 100%);
+  max-height: 86vh;
+  border-radius: 8px;
+  object-fit: contain;
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.modal-close {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: var(--white);
+  color: var(--charcoal);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 @media (max-width: 860px) {
   .topbar {
     align-items: flex-start;
@@ -553,6 +715,7 @@ footer {
   .nav-links {
     width: 100%;
     justify-content: space-between;
+    gap: 10px;
   }
 
   .hero {

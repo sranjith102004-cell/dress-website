@@ -7,14 +7,15 @@ Use this when the seller does not want to edit website code.
 Create a Google Sheet with exactly these columns in row 1:
 
 ```text
-Code,Name,Category,Color,Price,Sizes,Stock,Photo
+Code,Name,Category,Color,Price,Sizes,Stock,StockCount,Photo
 ```
 
 Example rows:
 
 ```text
-D001,Floral Kurti,kurti,Pink,899,"S,M,L",available,https://example.com/dress-photo.jpg
-D002,Party Gown,party,Blue,1299,"M,L",sold out,https://example.com/gown-photo.jpg
+D001,Floral Kurti,kurti,Pink,899,"S,M,L",available,5,https://example.com/dress-photo.jpg
+D002,Party Gown,party,Blue,1299,"M,L",sold out,0,https://example.com/gown-photo.jpg
+D003,Linen Pants,pant,Black,699,,available,3,https://example.com/pants-photo.jpg
 ```
 
 ## 2. Publish as CSV
@@ -47,7 +48,10 @@ The seller only edits Google Sheets:
 
 - Change `Price` to update price.
 - Change `Sizes` to update available sizes.
-- Change `Stock` to `available`, `sold out`, or `hide`.
+- Leave `Sizes` blank if the item has no size choice. The website will not show "Free Size".
+- Change `Category` to control the filter buttons. If you add `pant`, the website shows a Pant filter. If no products use a category, that filter disappears.
+- Change `Stock` to `available`, `sold out`, or `hide`. If your sheet says `Stocks`, the website also accepts that.
+- Change `StockCount` to show how many pieces are available. Example: `5` shows "5 in stock".
 - Add a new row to add a new dress.
 - Delete a row or set `Stock` to `hide` to remove a dress.
 
