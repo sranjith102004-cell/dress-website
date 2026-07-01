@@ -275,22 +275,22 @@ h3 {
 .load-more-panel {
   display: grid;
   justify-items: center;
-  gap: 22px;
-  margin: 44px auto 0;
-  max-width: 540px;
+  gap: 14px;
+  margin: 32px auto 0;
+  max-width: 360px;
   color: var(--charcoal);
   text-align: center;
 }
 
 .load-more-panel p {
   margin-bottom: 0;
-  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-size: 1rem;
   line-height: 1.2;
 }
 
 .load-progress {
-  width: min(100%, 420px);
-  height: 5px;
+  width: min(100%, 280px);
+  height: 4px;
   background: #a7a7a7;
 }
 
@@ -303,14 +303,15 @@ h3 {
 }
 
 .load-more-button {
-  width: min(100%, 420px);
-  border: 2px solid var(--charcoal);
-  border-radius: 0;
-  padding: 20px 22px;
+  width: min(100%, 260px);
+  border: 1px solid var(--charcoal);
+  border-radius: 8px;
+  padding: 12px 18px;
   background: var(--white);
   color: var(--charcoal);
   font: inherit;
-  font-size: clamp(1.3rem, 4vw, 2.4rem);
+  font-size: 1.05rem;
+  font-weight: 800;
   cursor: pointer;
 }
 
